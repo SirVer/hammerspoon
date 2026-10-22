@@ -132,11 +132,7 @@ local closeMissionControl = function()
     if missionControlIsShowing() then module.toggleMissionControl() end
 end
 
-local findSpacesSubgroup = function(targetIdentifier, screenID)
-    local missionControlGroup, initialTime = nil, os.time()
-    while not missionControlGroup and (os.time() - initialTime) < 2 do
-        missionControlGroup = getMissionControlGroup()
-    end
+local spacesSubgroupFrom = function(missionControlGroup, targetIdentifier, screenID)
     if not missionControlGroup then
         return nil, "unable to get Mission Control data from the Dock"
     end
@@ -175,6 +171,17 @@ local findSpacesSubgroup = function(targetIdentifier, screenID)
         return nil, string.format("unable to find target %s for display", targetIdentifier)
     end
     return targetChild
+end
+module._spacesSubgroupFrom = spacesSubgroupFrom -- exposed for the test suite only
+
+local findSpacesSubgroup = function(targetIdentifier, screenID)
+    -- retry the whole lookup: when Mission Control is reopened right after being closed, macOS 27's WindowManager
+    -- can briefly expose a partial tree (only some `mc.display` groups, or one without its `mc.spaces` group yet)
+    local targetChild, errMsg, initialTime = nil, nil, os.time()
+    repeat
+        targetChild, errMsg = spacesSubgroupFrom(getMissionControlGroup(), targetIdentifier, screenID)
+    until targetChild or (os.time() - initialTime) >= 2
+    return targetChild, errMsg
 end
 
 local waitForMissionControl = function()
