@@ -65,9 +65,16 @@ end
 local localeChange_identifier = host.locale.registerCallback(getDockExitTemplates)
 getDockExitTemplates() -- set initial values
 
+-- macOS 27 moved Mission Control into WindowManager, which doesn't ship these strings and always uses its built-in
+-- English defaults for them, whatever the user's language
+local AXExitToDesktopDefault           = "^exit to (.-)$"
+local AXExitToFullscreenDesktopDefault = "^exit to full screen (.-)$"
+
 local spacesNameFromButtonName = function(name)
-    return name:match(AXExitToFullscreenDesktop) or name:match(AXExitToDesktop) or name
+    return name:match(AXExitToFullscreenDesktop) or name:match(AXExitToDesktop)
+        or name:match(AXExitToFullscreenDesktopDefault) or name:match(AXExitToDesktopDefault) or name
 end
+module._spacesNameFromButtonName = spacesNameFromButtonName -- exposed for the test suite only
 
 -- now onto the rest of the local functions
 local _dockElement

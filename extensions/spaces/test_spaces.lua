@@ -90,3 +90,12 @@ function testSpacesSubgroupPartialTree()
   assertIsEqual("unable to get Mission Control data from the Dock", errMsg)
   return success()
 end
+
+function testSpacesNameFromButtonName()
+  -- macOS 27's WindowManager uses these English templates whatever the user's language
+  assertIsEqual("Desktop", hs.spaces._spacesNameFromButtonName("exit to Desktop"))
+  assertIsEqual("Desktop 2", hs.spaces._spacesNameFromButtonName("exit to Desktop 2"))
+  assertIsEqual("Safari", hs.spaces._spacesNameFromButtonName("exit to full screen Safari"))
+  assertIsEqual("Something else", hs.spaces._spacesNameFromButtonName("Something else"))
+  return success()
+end

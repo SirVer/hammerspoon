@@ -43,4 +43,8 @@
     RUN_LUA_TEST()
 }
 
+- (void)testSpacesNameFromButtonName {
+    RUN_LUA_TEST()
+}
+
 @end
