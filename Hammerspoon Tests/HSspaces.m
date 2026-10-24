@@ -35,4 +35,16 @@
     RUN_LUA_TEST()
 }
 
+- (void)testSpacesSubgroupFound {
+    RUN_LUA_TEST()
+}
+
+- (void)testSpacesSubgroupPartialTree {
+    RUN_LUA_TEST()
+}
+
+- (void)testSpacesNameFromButtonName {
+    RUN_LUA_TEST()
+}
+
 @end

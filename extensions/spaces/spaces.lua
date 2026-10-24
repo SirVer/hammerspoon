@@ -65,9 +65,16 @@ end
 local localeChange_identifier = host.locale.registerCallback(getDockExitTemplates)
 getDockExitTemplates() -- set initial values
 
+-- macOS 27 moved Mission Control into WindowManager, which doesn't ship these strings and always uses its built-in
+-- English defaults for them, whatever the user's language
+local AXExitToDesktopDefault           = "^exit to (.-)$"
+local AXExitToFullscreenDesktopDefault = "^exit to full screen (.-)$"
+
 local spacesNameFromButtonName = function(name)
-    return name:match(AXExitToFullscreenDesktop) or name:match(AXExitToDesktop) or name
+    return name:match(AXExitToFullscreenDesktop) or name:match(AXExitToDesktop)
+        or name:match(AXExitToFullscreenDesktopDefault) or name:match(AXExitToDesktopDefault) or name
 end
+module._spacesNameFromButtonName = spacesNameFromButtonName -- exposed for the test suite only
 
 -- now onto the rest of the local functions
 local _dockElement
@@ -132,11 +139,7 @@ local closeMissionControl = function()
     if missionControlIsShowing() then module.toggleMissionControl() end
 end
 
-local findSpacesSubgroup = function(targetIdentifier, screenID)
-    local missionControlGroup, initialTime = nil, os.time()
-    while not missionControlGroup and (os.time() - initialTime) < 2 do
-        missionControlGroup = getMissionControlGroup()
-    end
+local spacesSubgroupFrom = function(missionControlGroup, targetIdentifier, screenID)
     if not missionControlGroup then
         return nil, "unable to get Mission Control data from the Dock"
     end
@@ -175,6 +178,17 @@ local findSpacesSubgroup = function(targetIdentifier, screenID)
         return nil, string.format("unable to find target %s for display", targetIdentifier)
     end
     return targetChild
+end
+module._spacesSubgroupFrom = spacesSubgroupFrom -- exposed for the test suite only
+
+local findSpacesSubgroup = function(targetIdentifier, screenID)
+    -- retry the whole lookup: when Mission Control is reopened right after being closed, macOS 27's WindowManager
+    -- can briefly expose a partial tree (only some `mc.display` groups, or one without its `mc.spaces` group yet)
+    local targetChild, errMsg, initialTime = nil, nil, os.time()
+    repeat
+        targetChild, errMsg = spacesSubgroupFrom(getMissionControlGroup(), targetIdentifier, screenID)
+    until targetChild or (os.time() - initialTime) >= 2
+    return targetChild, errMsg
 end
 
 local waitForMissionControl = function()
